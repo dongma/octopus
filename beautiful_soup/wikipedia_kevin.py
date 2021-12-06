@@ -47,6 +47,32 @@ def get_internal_links(bs, include_url):
     return internal_links
 
 
+def get_external_links(bs, exclude_url):
+    """judge by url prefix which start with www. or http:"""
+    external_links = []
+    # 找到所有以"http"或"www"开头且不包含当前url的链接，其指向外部资源external resource
+    for link in bs.find_all('a', href=re.compile('^(http|www)((?!'+exclude_url+').)*$')):
+        if link.attrs['href'] is not None:
+            if link.attrs['href'] not in external_links:
+                external_links.append(link.attrs['href'])
+    return external_links
+
+
+def get_random_external_link(starting_page):
+    """get random external links through html.parser"""
+    html = urlopen(starting_page)
+    bs = BeautifulSoup(html, 'html.parser')
+    external_links = get_external_links(bs, urlparse(starting_page).netloc)
+    if len(external_links) == 0:
+        print("No external links, looking around the site for one")
+        domain = '{}://{}'.format(urlparse(starting_page).scheme,
+                                  urlparse(starting_page).netloc)
+        internal_links = get_internal_links(bs, domain)
+        return get_random_external_link(internal_links[random.randint(0, len(internal_links)-1)])
+    else:
+        return external_links[random.randint(0, len(external_links) - 1)]
+
+
 if __name__ == '__main__':
     # links = getLinks('/wiki/Kevin_Bacon')
     # while len(links) > 0:
