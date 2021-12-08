@@ -36,6 +36,7 @@ class Website:
         self.titleTag = title_tag
         self.bodyTag = body_tag
 
+
 class Crawler:
     """Crawler对象用于抓取任务网站的任务网页标题和内容"""
     def getPage(self, url):

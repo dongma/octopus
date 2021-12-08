@@ -1,19 +1,23 @@
 # -*- coding:utf-8 -*-
 import scrapy
+from scrapy.spiders import CrawlSpider, Rule
+from scrapy.linkextractors import LinkExtractor
 
 
-class ArticleSpider(scrapy.Spider):
-	name = 'article'
+class ArticleSpider(CrawlSpider):
+	"""use $scrapy startproject wikiSpider command to generate spider app"""
+	name = 'articles'
+	allowed_domain = ['www.wikipedia.org']
 
-	def start_requests(self):
-		urls = [
-			'https://en.wikipedia.org/wiki/Functional_programming',
-			"https://en.wikipedia.org/wiki/Monty_Python"
-		]
-		return [scrapy.Request(url=url, callback=self.parse) for url in urls]
+	start_urls = ['https://en.wikipedia.org/wiki/Benevolent_dictator_for_life']
+	rules = [Rule(LinkExtractor(allow=r'.*'), callback='parse_items', follow=True)]
 
-	def parse(self, response, **kwargs):
+	def parse_items(self, response, **kwargs):
+		"""parse webpage through CrawlSpider"""
 		url = response.url
 		title = response.css('h1::text').extract_first()
-		print("Url is: {}".format(url))
-		print("title is: {}".format(title))
+		text = response.xpath('//div[@id="mw-content-text"]//text()').extract()
+		last_updated = response.css('li#footer-info-lastmod::text')\
+			.extract_first()
+		last_updated = last_updated.replace('This page was last edited on ', '')
+		print(f"Url is: {url}, title is: [{title}], text is: {text}, last_updated: {last_updated}")
