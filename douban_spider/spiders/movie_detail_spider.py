@@ -2,6 +2,8 @@
 import scrapy
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
+from douban_spider.items import DoubanSpiderMovie
+import json
 
 
 class MovieDetailSpider(CrawlSpider):
@@ -19,6 +21,15 @@ class MovieDetailSpider(CrawlSpider):
 		'IDE': 'AHWqTUmsTPTihXvE5wlKtGnI_ri_3rwNMwXIwfudP2P9-978Dx5zV6x2GdB_XETgWxo'
 	}
 
+	# 是否开启调试模式，用于调试爬虫抓取json结果: scrapy crawl douban_movie_spider -a debug=true
+	enable_debug = False
+
+	def __init__(self, *a, **kwargs):
+		super().__init__(*a, **kwargs)
+		self.logger.info("whether enable debug mode from command line: %s", kwargs.get("debug"))
+		if str(kwargs.get("debug")).upper() == "TRUE" and bool(kwargs.get("debug")) is True:
+			self.enable_debug = True
+
 	def start_requests(self):
 		start_urls = ['https://movie.douban.com/subject/27622447/?from=subject-page']
 		yield scrapy.Request(url=start_urls[0], headers=self.headers, cookies=self.cookies,
@@ -26,12 +37,20 @@ class MovieDetailSpider(CrawlSpider):
 
 	def parse(self, response, **kwargs):
 		"""从电影详情页中解析电影详情、演员、导演、热评的相关数据"""
-		self.logger.info('Hi this is an movie page! %s', response.url)
-		if kwargs.get("debug") is not None:
+		self.logger.info('Hi this is an movie page! %s, debug mode: %s', response.url, self.enable_debug)
+		if self.enable_debug:
 			from scrapy.shell import inspect_response
 			inspect_response(response, self)
 		else:
-			response.xpath('//div[@id="content"]/h1').get()
+			self.extract_movie_info(response)
 
-	def extract_movie_info(self, response):
+	@staticmethod
+	def extract_movie_info(response):
 		"""从div#id=wrapper的content中取影片名称、发行地、导演、主要演员等数据"""
+		titles = response.xpath('//div[@id="content"]/h1/span/text()').getall()
+		movie = DoubanSpiderMovie()
+		if len(titles) == 2:
+			movie['movie_name'] = titles[0]
+			movie['year'] = titles[1].replace('(', '').replace(')', '')
+		print(f"movie information is: {json.dumps(movie.__dict__)}, movie name: {titles[0]}")
+		return movie
