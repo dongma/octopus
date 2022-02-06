@@ -14,13 +14,13 @@ class DoubanSpiderMovie(scrapy.Item):
     topics = scrapy.Field()
     writer = scrapy.Field()
     director = scrapy.Field()
-    actors = scrapy.Field()
+    actor = scrapy.Field()
     official_site = scrapy.Field()
     movie_making_zone = scrapy.Field()
     IMDb = scrapy.Field()
     # 豆瓣评分、评价人数
     movie_rate = scrapy.Field()
-    person_numbers = scrapy.Field()
+    votes = scrapy.Field()
 
 
 class Person(scrapy.Item):
@@ -33,11 +33,10 @@ class Person(scrapy.Item):
 class HotComment(scrapy.Item):
     # 豆瓣影评信息（热评），包括：网友的id、名称、写评论的时间、影评内容
     movie_id = scrapy.Field()
-    audience_id = scrapy.Field()
-    audience_name = scrapy.Field()
+    user_url = scrapy.Field()
+    nick_name = scrapy.Field()
     time = scrapy.Field()
     content = scrapy.Field()
     # 星级（几颗星）、投票数（有用数）
     stars = scrapy.Field()
-    voters = scrapy.Field()
-
+    valid_votes = scrapy.Field()
