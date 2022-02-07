@@ -11,7 +11,7 @@ from douban_spider.utils import ParseUtils
 class MovieDetailSpider(CrawlSpider):
 	"""用于解析豆瓣电影详情页的数据，抓取《小偷家族》的数据，很喜欢'是枝裕和'的电影"""
 	name = 'douban_movie_spider'
-	allowed_domains = ['https://movie.douban.com/']
+	allowed_domains = ['douban.com']
 
 	headers = {
 		'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
@@ -26,6 +26,12 @@ class MovieDetailSpider(CrawlSpider):
 	# 是否开启调试模式，用于调试爬虫抓取json结果: scrapy crawl douban_movie_spider -a debug=true
 	enable_debug = False
 
+	# rules会用正则表达式匹配link url，匹配的地址会用scrapy重新抓取
+	rules = [
+		Rule(LinkExtractor(allow=r'/subject/[0-9]+/'), callback='parse', follow=True,
+			 cb_kwargs={'movie_url': True})
+	]
+
 	def __init__(self, *a, **kwargs):
 		super().__init__(*a, **kwargs)
 		self.logger.info("whether enable debug mode from command line: %s", kwargs.get("debug"))
@@ -39,15 +45,26 @@ class MovieDetailSpider(CrawlSpider):
 
 	def parse(self, response, **kwargs):
 		"""从电影详情页中解析电影详情、演员、导演、热评的相关数据"""
-		self.logger.info('Hi this is an movie page! %s, debug mode: %s', response.url, self.enable_debug)
-		if self.enable_debug:
-			from scrapy.shell import inspect_response
-			inspect_response(response, self)
+		if kwargs.get('movie_url') is None or kwargs.get('movie_url') is True:
+			self.logger.info('Hi this is an movie page! %s, debug mode: %s', response.url, self.enable_debug)
+			if self.enable_debug:
+				from scrapy.shell import inspect_response
+				inspect_response(response, self)
+			else:
+				movie = self.extract_movie_info(response)
+				# 从response中解析hot_comment#div热评数据
+				hot_comments = self.get_hot_comments_data(movie['id'], response)
+				yield movie
+				# 从电影推荐列表中#抓取"喜欢这部电影的人也喜欢"的影片列表 (用scrapy抓取这些数据)
+				recommend_movies = response.css('div.recommendations-bd dd>a::attr(href)').getall()
+				for movie_url in recommend_movies:
+					joined_movie_url = response.urljoin(movie_url)
+					# self.logger.info(f"movie_url: {movie_url}, joined movie_url value: {joined_movie_url}")
+					yield scrapy.Request(url=joined_movie_url, headers=self.headers, cookies=self.cookies,
+										 callback=self.parse)
 		else:
-			movie = self.extract_movie_info(response)
-			# 从response中解析hot_comment#div热评数据
-			hot_comments = self.get_hot_comments_data(movie['id'], response)
-
+			print(f"this is not an movie meta data url, url data: {response.url}")
+			return None
 
 	@staticmethod
 	def extract_movie_info(response):
@@ -62,9 +79,9 @@ class MovieDetailSpider(CrawlSpider):
 		movie['director'] = ParseUtils.getMovieSpanValue(details[0], "//span/span/a/text()")
 		movie['writer'] = ParseUtils.getMovieSpanValue(details[1], "//span/span/a/text()")
 		movie['actor'] = ParseUtils.getMovieSpanValue(details[2], "//span/span/a/text()", getall=True)
-		movie['topics'] = response.xpath('//div[@id="info"]/span[contains(@property, "v:genre")]/text()')\
+		movie['topics'] = response.xpath('//div[@id="info"]/span[contains(@property, "v:genre")]/text()') \
 			.getall()
-		movie['official_site'] = response.xpath('//div[@id="info"]/span[contains(@rel, "nofollow")]/text()')\
+		movie['official_site'] = response.xpath('//div[@id="info"]/span[contains(@rel, "nofollow")]/text()') \
 			.get()
 
 		# @please see https://stackoverflow.com/questions/43646685/select-sequence-of-next-siblings-in-scrapy/43647765
@@ -101,7 +118,7 @@ class MovieDetailSpider(CrawlSpider):
 			data['user_url'] = selector.xpath("//span[contains(@class, 'comment-info')]/a/@href").get()
 			# 计算此条评论给了几颗星，从span#allstar40 class中进行提取
 			star_class = selector.xpath("//span[contains(@class, 'rating')]/@class").get()
-			data['stars'] = int(star_class.replace('rating', '').replace('allstar', ''))/10
+			data['stars'] = int(star_class.replace('rating', '').replace('allstar', '')) / 10
 			comment_list.append(data)
 			print(f"data-cid: {data_cid}, hot comment: {json.dumps(data.__dict__, ensure_ascii=False)}")
 		return hot_comments
