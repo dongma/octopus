@@ -21,6 +21,7 @@ class DoubanSpiderMovie(scrapy.Item):
     # 豆瓣评分、评价人数
     movie_rate = scrapy.Field()
     votes = scrapy.Field()
+    hot_comments = scrapy.Field()
 
 
 class Person(scrapy.Item):

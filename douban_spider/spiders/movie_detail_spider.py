@@ -19,8 +19,19 @@ class MovieDetailSpider(CrawlSpider):
 		'sec-ch-ua-platform': 'macOS'
 	}
 	cookies = {
-		'DSID': 'AAO-7r4C8Em_M71p_MUerz5aaWOF4e04a6owMHoOJRS0cqIWmdAXLmD2_beeMjWNIN5tgVUqegEVKyChVNoELA45BKFPz9NaXekzwT7XSJiMzZwk6MlXmEcJOyRdSwIJ2ccT5L1sLixl5DcxBz_U5QShbxJKhmzve3Rqh40vcXK-3qRdtzcdYNMD8gskEFDHts9aUDACmK-X62TMV8WX_VWCoHU6Dqm42srxQ6l2csYYh6M93dnDZUyyTHzqHY16UDL0scH5GtifiWefeP5fxv1B_BwtNESGYrh8AqdiwzJAFkJKnnLn2II',
-		'IDE': 'AHWqTUmsTPTihXvE5wlKtGnI_ri_3rwNMwXIwfudP2P9-978Dx5zV6x2GdB_XETgWxo'
+		'viewed': '35324975',
+		'bid': 'fA9hGAT_iEQ',
+		'gr_user_id': 'e5bcf6bc-8b35-4c06-8ead-e3c17026a153',
+		'__gads': 'ID=f370ec19e29c1bb4-2204b9a604d000a0:T=1642502744:RT=1642502744:S=ALNI_Mb9HPqphkel4H4PADGFdq3jX1PQSw;',
+		'll': '118375',
+		'__utmc': '30149280',
+		'dbcl2': '253742920:baWr4fpDIaU',
+		'ck': '=Kc9Q',
+		'__utma': '30149280.1664920610.1643426646.1644193687.1644292281.6',
+		'__utmb': '30149280.0.10.1644292281',
+		'__utmz': '30149280.1644292281.6.3.utmcsr=accounts.douban.com|utmccn=(referral)|utmcmd=referral|utmcct=/',
+		'push_noty_num': '0',
+		'push_doumail_num': '0'
 	}
 
 	# 是否开启调试模式，用于调试爬虫抓取json结果: scrapy crawl douban_movie_spider -a debug=true
@@ -54,6 +65,7 @@ class MovieDetailSpider(CrawlSpider):
 				movie = self.extract_movie_info(response)
 				# 从response中解析hot_comment#div热评数据
 				hot_comments = self.get_hot_comments_data(movie['id'], response)
+				movie['hot_comments'] = hot_comments
 				yield movie
 				# 从电影推荐列表中#抓取"喜欢这部电影的人也喜欢"的影片列表 (用scrapy抓取这些数据)
 				recommend_movies = response.css('div.recommendations-bd dd>a::attr(href)').getall()
@@ -121,4 +133,4 @@ class MovieDetailSpider(CrawlSpider):
 			data['stars'] = int(star_class.replace('rating', '').replace('allstar', '')) / 10
 			comment_list.append(data)
 			print(f"data-cid: {data_cid}, hot comment: {json.dumps(data.__dict__, ensure_ascii=False)}")
-		return hot_comments
+		return comment_list
