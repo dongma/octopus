@@ -23,6 +23,12 @@ class DoubanSpiderMovie(scrapy.Item):
     votes = scrapy.Field()
     hot_comments = scrapy.Field()
 
+    def gen_insert_sql(self):
+        sql = """insert into movie_meta(id, movie_name, year, topics, writer, director, actors, 
+            official_site, movie_making_zone, IMDb, movie_rate, votes) 
+            values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+        params = (self["id"], self["movie_name"], self["year"], self["topics"], self["writer"])
+        return sql, params
 
 class Person(scrapy.Item):
     # 抽象人员的数据，包括其在豆瓣的id、角色（导演、编剧、演员）、名称等
@@ -41,3 +47,5 @@ class HotComment(scrapy.Item):
     # 星级（几颗星）、投票数（有用数）
     stars = scrapy.Field()
     valid_votes = scrapy.Field()
+
+    def gen_insert_sql(self):

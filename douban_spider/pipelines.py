@@ -11,8 +11,7 @@ import pymysql as pymysql
 
 class DoubanSpiderPipeline:
     """将抓取的数据写入到mysql数据库中"""
-    def process_item(self, item, spider):
-        return item
+    cursor = None
 
     def __init__(self, mysql_uri, mysql_db, mysql_user, password):
         self.mysql_uri = mysql_uri
@@ -32,13 +31,14 @@ class DoubanSpiderPipeline:
         )
 
     def open_spider(self, spider):
-        cursor = self.connect.cursor()
+        self.cursor = self.connect.cursor()
 
     def close_spider(self, spider):
-        self.client.close()
+        self.cursor.close()
+        self.connect.close()
 
     def process_item(self, item, spider):
-        self.db[self.collection_name].insert_one(ItemAdapter(item).asdict())
+        self.cursor.execute()
         return item
 
 
