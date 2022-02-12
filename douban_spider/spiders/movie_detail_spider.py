@@ -118,8 +118,8 @@ class MovieDetailSpider(CrawlSpider):
 		comment_list = []
 		for div_elem in hot_comments:
 			selector = Selector(text=div_elem)
-			data_cid = selector.xpath('//@data-cid').get()
 			data = HotComment()
+			data['data_cid'] = selector.xpath('//@data-cid').get()
 			data['movie_id'] = movie_id
 			data['valid_votes'] = selector.xpath("//span[contains(@class, 'vote-count')]/text()").get()
 
@@ -132,5 +132,5 @@ class MovieDetailSpider(CrawlSpider):
 			star_class = selector.xpath("//span[contains(@class, 'rating')]/@class").get()
 			data['stars'] = int(star_class.replace('rating', '').replace('allstar', '')) / 10
 			comment_list.append(data)
-			print(f"data-cid: {data_cid}, hot comment: {json.dumps(data.__dict__, ensure_ascii=False)}")
+			print(f"data-cid: {data['data_cid']}, hot comment: {json.dumps(data.__dict__, ensure_ascii=False)}")
 		return comment_list

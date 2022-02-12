@@ -27,8 +27,22 @@ class DoubanSpiderMovie(scrapy.Item):
         sql = """insert into movie_meta(id, movie_name, year, topics, writer, director, actors, 
             official_site, movie_making_zone, IMDb, movie_rate, votes) 
             values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
-        params = (self["id"], self["movie_name"], self["year"], self["topics"], self["writer"])
+        # 对抓取的字段进行处理(将数组拍平)，将actor->转换为string, topics数组->转为string
+        actor_data = None
+        if self['actor'] is not None and isinstance(self['actor'], list):
+            actor_list = self['actor']
+            actor_data = ",".join(actor_list)
+        topic_data = None
+        if self['topics'] is not None:
+            topic_data = ",".join(self['topics'])
+        director_data = None
+        if self['director'] is not None:
+            director_data = ",".join(self['director'])
+        params = (self["id"], self["movie_name"], self["year"], topic_data, self["writer"], director_data, actor_data,
+                  self["official_site"], self["movie_making_zone"], self["IMDb"], self["movie_rate"],
+                  self["votes"])
         return sql, params
+
 
 class Person(scrapy.Item):
     # 抽象人员的数据，包括其在豆瓣的id、角色（导演、编剧、演员）、名称等
@@ -39,6 +53,7 @@ class Person(scrapy.Item):
 
 class HotComment(scrapy.Item):
     # 豆瓣影评信息（热评），包括：网友的id、名称、写评论的时间、影评内容
+    data_cid = scrapy.Field()
     movie_id = scrapy.Field()
     user_url = scrapy.Field()
     nick_name = scrapy.Field()
@@ -49,3 +64,8 @@ class HotComment(scrapy.Item):
     valid_votes = scrapy.Field()
 
     def gen_insert_sql(self):
+        sql = """insert into comment(data_cid, movie_id, user_url, nick_name, `time`, content, stars, valid_votes)
+            values(%s, %s, %s, %s, %s, %s, %s, %s)"""
+        params = (self["data_cid"], self["movie_id"], self["user_url"], self["nick_name"], self["time"],
+                  self["content"], self["stars"], self["valid_votes"])
+        return sql, params
