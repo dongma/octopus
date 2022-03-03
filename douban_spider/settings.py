@@ -62,7 +62,8 @@ CONCURRENT_REQUESTS = 32
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-   # 'douban_spider.pipelines.DoubanSpiderPipeline': 300,
+	# 'douban_spider.pipelines.DoubanSpiderPipeline': 300,
+	# 'douban_spider.pipelines.MongoPipeline': 200
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -91,3 +92,7 @@ MYSQL_URL = '127.0.0.1'
 MYSQL_USER = 'root'
 MYSQL_PASSWORD = '123456'
 MYSQL_DATABASE = 'douban_datahub'
+
+# Mongo database configuration
+MONGO_URL = '127.0.0.1'
+MONGO_DATABASE = 'scrapy_items'

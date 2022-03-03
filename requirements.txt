@@ -1,5 +1,7 @@
 beautifulsoup4==4.10.0
 certifi==2020.12.5
+itemadapter==0.4.0
+pymongo==4.0.1
 PyMySQL==1.0.2
 requests==2.25.1
 Scrapy==2.5.1
