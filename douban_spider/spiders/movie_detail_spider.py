@@ -14,33 +14,49 @@ class MovieDetailSpider(CrawlSpider):
 	allowed_domains = ['douban.com']
 
 	headers = {
-		'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
-					  'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.99 Safari/537.36',
+		'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) '
+					  'Chrome/99.0.4844.51 Safari/537.36',
 		'sec-ch-ua-platform': 'macOS'
 	}
 	cookies = {
-		'viewed': '35324975',
-		'bid': 'fA9hGAT_iEQ',
-		'gr_user_id': 'e5bcf6bc-8b35-4c06-8ead-e3c17026a153',
-		'__gads': 'ID=f370ec19e29c1bb4-2204b9a604d000a0:T=1642502744:RT=1642502744:S=ALNI_Mb9HPqphkel4H4PADGFdq3jX1PQSw;',
-		'll': '118375',
-		'__utmc': '30149280',
-		'dbcl2': '253742920:baWr4fpDIaU',
-		'ck': '=Kc9Q',
-		'__utma': '30149280.1664920610.1643426646.1644193687.1644292281.6',
-		'__utmb': '30149280.0.10.1644292281',
-		'__utmz': '30149280.1644292281.6.3.utmcsr=accounts.douban.com|utmccn=(referral)|utmcmd=referral|utmcct=/',
-		'push_noty_num': '0',
-		'push_doumail_num': '0'
+		# 'viewed': '33386709_24737674_6424904_1101779_25779298_26274624_26772677_2054201_35196328_26381341',
+		# 'bid': 'fA9hGAT_iEQ',
+		# 'gr_user_id': '8a699ab6-19ec-4a4f-88c8-1417a5b04adc',
+		# '__gads': 'ID=3f43dda6a3d2833b-229f37c9c7d000ab:T=1646294592:RT=1646294592:S=ALNI_MafUa87tRIqF3w_gkXASOt4aGLcDQ',
+		# 'll': '108288',
+		# '__utmc': '30149280',
+		# 'dbcl2': '253742920:baWr4fpDIaU',
+		# 'ck': '=Kc9Q',
+		# '__utma': '30149280.1137633045.1646306975.1646306975.1647619819.2',
+		# '__utmb': '30149280.0.10.1644292281',
+		# '__utmz': '30149280.1647619819.2.2.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided)',
+		# 'push_noty_num': '0',
+		# 'push_doumail_num': '0'
+
+		"bid": "fdyZudJS8XY",
+		"douban - fav - remind": "1",
+		"ll": "108288",
+		"__gads": "ID = 3f43dda6a3d2833b - 229f37c9c7d000ab: T = 1646294592:RT = 1646294592:S = ALNI_MafUa87tRIqF3w_gkXASOt4aGLcDQ",
+		"gr_user_id": "8a699ab6 - 19ec - 4a4f - 88c8 - 1417a5b04adc",
+		"viewed": "33386709_24737674_6424904_1101779_25779298_26274624_26772677_2054201_35196328_26381341",
+		"dbcl2": "161751427:grj+9+RcpSw",
+		"frodotk": "30bc89815063bb8a92359c83f12b329e",
+		"talionusr": "eyJpZCI6ICIxNjE3NTE0MjciLCAibmFtZSI6ICJTYW1NYUNvZGUifQ==",
+		"__utma": "30149280.1137633045.1646306975.1647619819.1647707830.3",
+		"__utmb": "30149280.0.10.1647707830",
+		"__utmc": "30149280",
+		"__utmz": "30149280.1647707830.3.3.utmcsr = google | utmccn = (organic) | utmcmd = organic | utmctr = (not% 20provided)"
 	}
 
 	# 是否开启调试模式，用于调试爬虫抓取json结果: scrapy crawl douban_movie_spider -a debug=true
 	enable_debug = False
 
-	# rules会用正则表达式匹配link url，匹配的地址会用scrapy重新抓取
+	# rules会用正则表达式匹配link url，匹配的地址会用scrapy重新抓取 (其实，这块就可以依据Rule#抓取不同的对象)
 	rules = [
 		Rule(LinkExtractor(allow=r'/subject/[0-9]+/'), callback='parse', follow=True,
 			 cb_kwargs={'movie_url': True})
+		# Rule(LinkExtractor(allow=r'/topic/[0-9]+/'), callback='topic', follow=True,
+		# 	 cb_kwargs={'movie_url': True})
 	]
 
 	def __init__(self, *a, **kwargs):
@@ -63,6 +79,10 @@ class MovieDetailSpider(CrawlSpider):
 				inspect_response(response, self)
 			else:
 				movie = self.extract_movie_info(response)
+				if movie is None:
+					self.logger.info("couldn't acquire movie data from movie url, url: %s", response.url)
+					return None
+
 				# 从response中解析hot_comment#div热评数据
 				hot_comments = self.get_hot_comments_data(movie['id'], response)
 				movie['hot_comments'] = hot_comments
@@ -88,9 +108,14 @@ class MovieDetailSpider(CrawlSpider):
 			movie['year'] = titles[1].replace('(', '').replace(')', '')
 		# 从div#info#span list中开始解析，解析导演、编剧的名称、主题类型
 		details = response.xpath('//div[@id="info"]/span').getall()
-		movie['director'] = ParseUtils.getMovieSpanValue(details[0], "//span/span/a/text()")
-		movie['writer'] = ParseUtils.getMovieSpanValue(details[1], "//span/span/a/text()")
-		movie['actor'] = ParseUtils.getMovieSpanValue(details[2], "//span/span/a/text()", getall=True)
+
+		if len(details) > 0:
+			movie['director'] = ParseUtils.getMovieSpanValue(details[0], "//span/span/a/text()")
+			movie['writer'] = ParseUtils.getMovieSpanValue(details[1], "//span/span/a/text()")
+			movie['actor'] = ParseUtils.getMovieSpanValue(details[2], "//span/span/a/text()", getall=True)
+		else:
+			return None
+
 		movie['topics'] = response.xpath('//div[@id="info"]/span[contains(@property, "v:genre")]/text()') \
 			.getall()
 		movie['official_site'] = response.xpath('//div[@id="info"]/span[contains(@rel, "nofollow")]/text()') \
@@ -98,9 +123,9 @@ class MovieDetailSpider(CrawlSpider):
 
 		# @please see https://stackoverflow.com/questions/43646685/select-sequence-of-next-siblings-in-scrapy/43647765
 		regex = '//text()[preceding-sibling::span[text()="制片国家/地区:"]]'
-		movie['movie_making_zone'] = response.xpath(regex).get().strip()
+		movie['movie_making_zone'] = response.xpath(regex).get()
 		regex = '//text()[preceding-sibling::span[text()="IMDb:"]]'
-		movie['IMDb'] = response.xpath(regex).get().strip()
+		movie['IMDb'] = response.xpath(regex).get()
 		# 解析影片的评分、参与评价的人数数据，从response.url中获取movie的id数据
 		avg_rate = response.xpath("//strong[contains(@property, 'v:average')]/text()").get()
 		movie['movie_rate'] = avg_rate
@@ -108,7 +133,7 @@ class MovieDetailSpider(CrawlSpider):
 
 		douban_id = response.url.split("subject")[1].split("/")[1]
 		movie['id'] = douban_id
-		print(f"scraping movie data: {json.dumps(movie.__dict__, ensure_ascii=False)}, movie title:《{titles[0]}》")
+		print(f"scraping movie data: {json.dumps(movie.__dict__, ensure_ascii=False)}, movie title:《{titles}》")
 		return movie
 
 	@staticmethod

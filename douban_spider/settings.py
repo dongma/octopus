@@ -62,8 +62,8 @@ CONCURRENT_REQUESTS = 32
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-	# 'douban_spider.pipelines.DoubanSpiderPipeline': 300,
-	# 'douban_spider.pipelines.MongoPipeline': 200
+	'douban_spider.pipelines.DoubanSpiderPipeline': 300,
+	'douban_spider.pipelines.MongoPipeline': 200
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
