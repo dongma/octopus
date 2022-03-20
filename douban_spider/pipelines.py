@@ -7,9 +7,9 @@
 # useful for handling different item types with a single interface
 import pymysql as pymysql
 from douban_spider.items import DoubanSpiderMovie
-import logging
 import pymongo
 from itemadapter import ItemAdapter
+import logging
 
 
 class DoubanSpiderPipeline:
@@ -44,17 +44,26 @@ class DoubanSpiderPipeline:
         # self.log.info("enter DoubanSpiderPipeline#process_item method, elem data: {}",
         #               json.dumps(item.__dict__, ensure_ascii=False))
         if isinstance(item, DoubanSpiderMovie):
-            sql, params = item.gen_insert_sql()
-            logging.info(f"[debug] movie, generate sql {sql}, params: {params}")
-            self.cursor.execute(sql, params)
-            self.connect.commit()
-            # 从电影的meta信息中取得该电影的5条热评，并将其写入数据库中 (将生成的SQL通过log打印)
-            hot_comments = item['hot_comments']
-            for elem in hot_comments:
-                sql, params = elem.gen_insert_sql()
-                logging.info(f"[debug] hot comments, generate sql {sql}, params: {params}")
+            item_id = item["id"]
+            exist_sql = """select * from movie_meta where id = %s"""
+            self.cursor.execute(exist_sql, list(item_id))
+            data = self.cursor.fetchone()
+
+            # 若表里已存在movie的数据，则不再向表里写电影信息
+            if data is None:
+                sql, params = item.gen_insert_sql()
+                logging.info(f"[debug] movie, generate sql {sql}, params: {params}")
                 self.cursor.execute(sql, params)
                 self.connect.commit()
+                # 从电影的meta信息中取得该电影的5条热评，并将其写入数据库中 (将生成的SQL通过log打印)
+                hot_comments = item['hot_comments']
+                for elem in hot_comments:
+                    sql, params = elem.gen_insert_sql()
+                    logging.info(f"[debug] hot comments, generate sql {sql}, params: {params}")
+                    self.cursor.execute(sql, params)
+                    self.connect.commit()
+            else:
+                logging.info("movie %s already exist in mysql", item["movie_name"])
         return item
 
 
