@@ -78,9 +78,13 @@ class MovieDetailSpider(CrawlSpider):
 				from scrapy.shell import inspect_response
 				inspect_response(response, self)
 			else:
-				movie = self.extract_movie_info(response)
-				if movie is None:
-					self.logger.info("couldn't acquire movie data from movie url, url: %s", response.url)
+				try:
+					movie = self.extract_movie_info(response)
+					if movie is None:
+						self.logger.info("couldn't acquire movie data from movie url, url: %s", response.url)
+						return None
+				except Exception as ex:
+					self.logger.error("MovieDetailSpider#parse method parse movie metadata cause exception", ex)
 					return None
 
 				# 从response中解析hot_comment#div热评数据
